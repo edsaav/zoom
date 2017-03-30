@@ -1,19 +1,21 @@
 class EmailGuesser
 
-  # Create array of possible first names from file
-  @first_names = []
-  File.open(File.join(File.dirname(__FILE__), "first_names.txt"), "r").each do |line|
-    @first_names.push(line.chomp)
-  end
+  def initialize()
+    # Create array of possible first names from file
+    @first_names = []
+    File.open(File.join(File.dirname(__FILE__), "first_names.txt"), "r").each do |line|
+      @first_names.push(line.chomp)
+    end
 
-  # Create array of possible last names from file
-  @last_names = []
-  File.open(File.join(File.dirname(__FILE__), "last_names.txt"), "r").each do |line|
-    @last_names.push(line.chomp)
+    # Create array of possible last names from file
+    @last_names = []
+    File.open(File.join(File.dirname(__FILE__), "last_names.txt"), "r").each do |line|
+      @last_names.push(line.chomp)
+    end
   end
 
   # Determine domain given an email address as argument
-  def self.domain(address)
+  def domain(address)
     if address.empty?
       nil
     else
@@ -21,19 +23,19 @@ class EmailGuesser
     end
   end
 
-  def self.get_format(address)
+  def get_format(address)
     if address.empty?
       nil
     else
       @prefix = address.split("@")[0]
       if @prefix.split(".").length == 1
-        if self.is_first_name?(@prefix)
+        if is_first_name?(@prefix)
           "first"
-        elsif self.is_last_name?(@prefix)
+        elsif is_last_name?(@prefix)
           "last"
-        elsif self.is_last_name?(@prefix[1,@prefix.length-1])
+        elsif is_last_name?(@prefix[1,@prefix.length-1])
           "flast"
-        elsif self.is_first_last_combined?(@prefix)
+        elsif is_first_last_combined?(@prefix)
           "firstlast"
         else
           "unknown"
@@ -48,7 +50,7 @@ class EmailGuesser
     end
   end
 
-  def self.is_first_name?(string)
+  def is_first_name?(string)
     if string.empty?
       return false
     elsif @first_names.include? string.chomp.downcase
@@ -58,7 +60,7 @@ class EmailGuesser
     end
   end
 
-  def self.is_last_name?(string)
+  def is_last_name?(string)
     if string.empty?
       return false
     elsif @last_names.include? string.chomp.downcase
@@ -68,7 +70,7 @@ class EmailGuesser
     end
   end
 
-  def self.is_first_last_combined?(string)
+  def is_first_last_combined?(string)
     if string.empty? || string.length < 5
       nil
     else
@@ -79,6 +81,29 @@ class EmailGuesser
           return true
         end
       end
+    end
+  end
+
+  def generate_email(first_name, last_name, sample_email)
+    email_format = self.get_format(sample_email)
+    suffix = "@" + self.domain(sample_email)
+    case email_format
+    when "first"
+      first_name.downcase + suffix
+    when "last"
+      last_name.downcase + suffix
+    when "flast"
+      first_name[0,1].downcase + last_name.downcase + suffix
+    when "firstlast"
+      first_name.downcase + last_name.downcase + suffix
+    when "first.last"
+      first_name.downcase + "." + last_name.downcase + suffix
+    when "f.last"
+      first_name[0,1].downcase + "." + last_name.downcase + suffix
+    when "first.l"
+      first_name.downcase + "." + last_name[0,1].downcase + suffix
+    else
+      "ERROR GUESSING EMAIL"
     end
   end
 

@@ -1,9 +1,10 @@
 require "csv" # should this be inside of the class definition?
+require_relative "email_guesser"
 
 class LeadsCleaner
 
   # add an initialize block that sets the csv file as an instance variable
-  def initialize(file)
+  def initialize(file, owner)
     @needed_columns = [
       "Last Name",
       "First Name",
@@ -30,11 +31,15 @@ class LeadsCleaner
       "Person Zip" => "Zip/Postal Code",
       "Company name" => "Company"
     }
-    @new_columns = {
-      "Conversion Type" => "Sales Generated",
-      "Original Lead Source" => "Sales Outbound",
-      "Lead Source" => "Sales Outbound"
-    }
+    # Define columns to add, formatted as [header, default field value]
+    @new_columns = [
+      ["Conversion Type", "Sales Generated"],
+      ["Original Lead Source", "Sales Outbound"],
+      ["Lead Source", "Sales Outbound"],
+      ["Record Owner", owner],
+      ["Status", "Untouched"]
+    ]
+    # Define block to edit column headers
     CSV::HeaderConverters[:new_headers] = lambda{|header|
       if @header_corrections.keys.include? header
         @header_corrections[header.to_s]
@@ -54,21 +59,33 @@ class LeadsCleaner
   end
 
   def add_columns()
-
-  end
-
-  def print_leads()
-    @leads.each do |lead|
-      puts lead["Last name"]
+    @leads.each do |row|
+      @new_columns.each do |column|
+        row[column[0]] = column[1]
+      end
     end
   end
 
-  def leads()
-    @leads
+  def fill_blank_phone_numbers()
+    @leads.each do |row|
+      if row["Phone"].empty?
+        row["Phone"] = row["Company phone number"]
+      end
+    end
   end
 
-  def list_headers()
-    @leads.headers().to_s
+  def fill_blank_emails()
+    @leads.each do |row|
+      if row["Email"].empty?
+        domain = row["Company domain name"]
+        @leads.each do |r|
+          if r["Company domain name"] == domain
+            e = EmailGuesser.new()
+            row["Email"] = e.generate_email(row["First Name"], row["Last Name"], r["Email"])
+          end
+        end
+      end
+    end
   end
 
   def write_new_file()
@@ -82,9 +99,18 @@ class LeadsCleaner
 
 end
 
-# Test code below
+#### Operation order ####
+# 1. Rename columns - does not need to be explicitely called
+# 2. Add columns
+# 3. Fill in phone numbers
+# 4. Fill in emails
+# 5. Remove extra columns
 
-lead_list = LeadsCleaner.new("sample.csv")
-#puts lead_list.leads.headers()[lead_list.leads.headers().index("First name")]
-#lead_list.rename_headers
-puts lead_list.list_headers
+lead_list = LeadsCleaner.new("sample.csv", "Edward Saavedra")
+
+
+lead_list.add_columns
+lead_list.fill_blank_phone_numbers
+lead_list.fill_blank_emails
+lead_list.remove_columns
+lead_list.write_new_file
