@@ -1,13 +1,9 @@
-##### Operation order #####
-## 1. Rename columns - does not need to be explicitely called
-## 2. Add columns
-## 3. Fill in phone numbers
-## 4. Fill in emails
-## 5. Remove extra columns
-
 require_relative "lib/leads_cleaner"
 
-intro = <<-HERE
+class Zoom
+  def initialize()
+    @user_name = ""
+    @intro = <<-HERE
 
   ############################################################################
   ############################################################################
@@ -26,28 +22,43 @@ intro = <<-HERE
   First, please move the CSV file that you would like to clean into the folder
   entitled PUT_YOUR_FILES_HERE.
 
-HERE
+    HERE
+  end
 
-#### Start of script steps ####
+  def open_program()
+    puts @intro
+    puts "What is your full name?"
+    @user_name = gets.chomp
+    puts "\nGreat, thanks #{@user_name.split(" ")[0]}! Now let's get started."
+  end
 
-puts intro
-puts "What is your full name?"
-user_name = gets.chomp
-puts "\nGreat, thanks #{user_name.split(" ")[0]}! Now let's get started."
-puts "What is the full name of the file you would like to clean?"
-file_name = gets.chomp
-lead_list = LeadsCleaner.new("PUT_YOUR_FILES_HERE/" + file_name, "Edward Saavedra")
-puts "Thanks, your file is now being cleaned."
+  def process(file)
+    file.add_columns
+    file.fill_blank_phone_numbers
+    file.fill_blank_emails
+    file.remove_columns
+  end
 
-lead_list.add_columns
-lead_list.fill_blank_phone_numbers
-lead_list.fill_blank_emails
-lead_list.remove_columns
+  def create_new_file(f)
+    puts "What would you like the new file to be called?"
+    new_file_name = gets.chomp
 
-puts "What would you like the new file to be called?"
-new_file_name = gets.chomp
+    puts "Creating new file '#{new_file_name}'."
+    f.write_new_file("CLEANED_FILES/" + new_file_name)
 
-puts "Creating new file '#{new_file_name}'."
-lead_list.write_new_file("CLEANED_FILES/" + new_file_name)
+    puts "Done! You can now find #{new_file_name} in the CLEANED_FILES folder."
+  end
 
-puts "Done! You can now find #{new_file_name} in the CLEANED_FILES folder."
+  def clean_file()
+    puts "What is the full name of the file you would like to clean?"
+    file_name = gets.chomp
+    lead_list = LeadsCleaner.new("PUT_YOUR_FILES_HERE/" + file_name, "Edward Saavedra")
+    puts "Thanks, your file is now being cleaned."
+    process(lead_list)
+    create_new_file(lead_list)
+  end
+end
+
+z = Zoom.new
+z.open_program
+z.clean_file
