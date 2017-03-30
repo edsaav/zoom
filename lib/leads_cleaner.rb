@@ -15,9 +15,7 @@ class LeadsCleaner
       "State/Province",
       "Zip/Postal Code",
       "Country",
-      "Company",
-      "Company domain name",
-      "Company phone number"
+      "Company"
     ]
     # Define column headers to change, formatted as [old name, correct name]
     @header_corrections = {
@@ -52,44 +50,34 @@ class LeadsCleaner
 
   def remove_columns()
     @leads.headers().each do |header|
-      unless @needed_columns.include? header.to_s
-        @leads.delete(header.to_s)
-      end
+      @leads.delete(header) unless @needed_columns.include? header
     end
   end
 
   def add_columns()
-    @leads.each do |row|
+    @leads.each do |r|
       @new_columns.each do |column|
-        row[column[0]] = column[1]
+        r[column[0]] = column[1]
       end
     end
   end
 
   def fill_blank_phone_numbers()
-    @leads.each do |row|
-      if row["Phone"].empty?
-        row["Phone"] = row["Company phone number"]
-      end
+    @leads.select {|row| row["Phone"].empty?}.each do |r|
+      r["Phone"] = r["Company phone number"]
     end
   end
 
   def fill_blank_emails()
-    @leads.each do |row|
-      if row["Email"].empty?
-        domain = row["Company domain name"]
-        @leads.each do |r|
-          if r["Company domain name"] == domain
-            e = EmailGuesser.new()
-            row["Email"] = e.generate_email(row["First Name"], row["Last Name"], r["Email"])
-          end
-        end
-      end
+    @leads.select {|row| row["Email"].empty?}.each do |r| # for each row with a blank "email" field...
+      match = @leads.select {|row| r["Company"] == row["Company"]}[0] # find rows with the same "company"...
+      eg = EmailGuesser.new() # and guess an email address based on that row's "email"
+      r["Email"] = eg.generate_email(r["First Name"], r["Last Name"], match["Email"])
     end
   end
 
-  def write_new_file()
-    CSV.open("clean_list.csv", "w") do |target|
+  def write_new_file(name)
+    CSV.open(name, "w") do |target|
       target << @leads.headers()
       @leads.each do |line|
         target << line
@@ -98,19 +86,3 @@ class LeadsCleaner
   end
 
 end
-
-#### Operation order ####
-# 1. Rename columns - does not need to be explicitely called
-# 2. Add columns
-# 3. Fill in phone numbers
-# 4. Fill in emails
-# 5. Remove extra columns
-
-lead_list = LeadsCleaner.new("sample.csv", "Edward Saavedra")
-
-
-lead_list.add_columns
-lead_list.fill_blank_phone_numbers
-lead_list.fill_blank_emails
-lead_list.remove_columns
-lead_list.write_new_file
