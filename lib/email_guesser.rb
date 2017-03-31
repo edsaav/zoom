@@ -16,33 +16,30 @@ class EmailGuesser
 
   # Determine domain given an email address as argument
   def domain(address)
-    if address.empty?
-      nil
-    else
-      address.split('@')[1]
-    end
+    return address.split('@')[1] unless address.empty?
+    nil
   end
 
   def get_format(address)
     if address.empty?
       nil
     else
-      @prefix = address.split("@")[0]
-      if @prefix.split(".").length == 1
-        if is_first_name?(@prefix)
+      a = address.split("@")[0]
+      if a.split(".").length == 1
+        if is_first_name?(a)
           "first"
-        elsif is_last_name?(@prefix)
+        elsif is_last_name?(a)
           "last"
-        elsif is_last_name?(@prefix[1,@prefix.length-1])
+        elsif is_last_name?(a[1,a.length-1])
           "flast"
-        elsif is_first_last_combined?(@prefix)
+        elsif is_first_last_combined?(a)
           "firstlast"
         else
           "unknown"
         end
-      elsif @prefix.split(".").length == 2 && @prefix.split(".")[0].length > 1 && @prefix.split(".")[1].length > 1
+      elsif a.split(".").length == 2 && a.split(".")[0].length > 1 && a.split(".")[1].length > 1
         "first.last"
-      elsif @prefix.split(".").length == 2 && @prefix.split(".")[0].length == 1
+      elsif a.split(".").length == 2 && a.split(".")[0].length == 1
         "f.last"
       else
         "first.l"
@@ -51,23 +48,13 @@ class EmailGuesser
   end
 
   def is_first_name?(string)
-    if string.empty?
-      return false
-    elsif @first_names.include? string.chomp.downcase
-      return true
-    else
-      return false
-    end
+    return true if @first_names.include?(string.chomp.downcase) && ! string.empty?
+    false
   end
 
   def is_last_name?(string)
-    if string.empty?
-      return false
-    elsif @last_names.include? string.chomp.downcase
-      return true
-    else
-      return false
-    end
+    return true if @last_names.include?(string.chomp.downcase) && ! string.empty?
+    false
   end
 
   def is_first_last_combined?(string)

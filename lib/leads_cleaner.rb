@@ -1,9 +1,8 @@
-require "csv" # should this be inside of the class definition?
+require "csv"
 require_relative "email_guesser"
 
 class LeadsCleaner
 
-  # add an initialize block that sets the csv file as an instance variable
   def initialize(file, owner)
     @needed_columns = [
       "Last Name",
@@ -34,30 +33,31 @@ class LeadsCleaner
       ["Conversion Type", "Sales Generated"],
       ["Original Lead Source", "Sales Outbound"],
       ["Lead Source", "Sales Outbound"],
-      ["Record Owner", owner],
+      ["Owner", owner],
       ["Status", "Untouched"]
     ]
     # Define block to edit column headers
-    CSV::HeaderConverters[:new_headers] = lambda{|header|
-      if @header_corrections.keys.include? header
-        @header_corrections[header.to_s]
+    CSV::HeaderConverters[:new_headers] = lambda{|h|
+      if @header_corrections.keys.include? h
+        @header_corrections[h.to_s]
       else
-        header
+        h
       end
     }
     @leads = CSV.read(file, :headers => true, :header_converters => [:new_headers])
   end
 
   def remove_columns()
-    @leads.headers().each do |header|
-      @leads.delete(header) unless @needed_columns.include? header
+    @leads.headers().each do |h|
+      @leads.delete(h) unless @needed_columns.include? h
     end
+    @leads
   end
 
   def add_columns()
     @leads.each do |r|
-      @new_columns.each do |column|
-        r[column[0]] = column[1]
+      @new_columns.each do |c|
+        r[c[0]] = c[1]
       end
     end
   end
@@ -66,6 +66,7 @@ class LeadsCleaner
     @leads.select {|row| row["Phone"].empty?}.each do |r|
       r["Phone"] = r["Company phone number"]
     end
+    return @leads.select {|row| row["Phone"].empty?}.to_a
   end
 
   def fill_blank_emails()
@@ -74,6 +75,7 @@ class LeadsCleaner
       eg = EmailGuesser.new() # and guess an email address based on that row's "email"
       r["Email"] = eg.generate_email(r["First Name"], r["Last Name"], match["Email"])
     end
+    @leads.select {|row| row["Email"].empty?}
   end
 
   def write_new_file(name)
