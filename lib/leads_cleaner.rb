@@ -63,19 +63,17 @@ class LeadsCleaner
   end
 
   def fill_blank_phone_numbers()
-    @leads.select {|row| row["Phone"].empty?}.each do |r|
+    @leads.select {|row| row["Phone"].to_s.empty?}.each do |r|
       r["Phone"] = r["Company phone number"]
     end
-    return @leads.select {|row| row["Phone"].empty?}.to_a
   end
 
   def fill_blank_emails()
-    @leads.select {|row| row["Email"].empty?}.each do |r| # for each row with a blank "email" field...
+    @leads.select {|row| row["Email"].to_s.empty?}.each do |r| # for each row with a blank "email" field...
       match = @leads.select {|row| r["Company"] == row["Company"]}[0] # find rows with the same "company"...
       eg = EmailGuesser.new() # and guess an email address based on that row's "email"
       r["Email"] = eg.generate_email(r["First Name"], r["Last Name"], match["Email"])
     end
-    @leads.select {|row| row["Email"].empty?}
   end
 
   def write_new_file(name)
@@ -85,6 +83,14 @@ class LeadsCleaner
         target << line
       end
     end
+  end
+
+  def headers()
+    @leads.headers().to_a
+  end
+
+  def content()
+    @leads
   end
 
 end
